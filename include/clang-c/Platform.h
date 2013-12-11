@@ -29,6 +29,12 @@ extern "C" {
   #define CINDEX_LINKAGE
 #endif
 
+#ifdef _MSC_VER
+  #define DEF_CALL __cdecl
+#else
+  #define DEF_CALL
+#endif
+
 #ifdef __GNUC__
   #define CINDEX_DEPRECATED __attribute__((deprecated))
 #else

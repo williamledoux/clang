@@ -1076,9 +1076,10 @@ CINDEX_LINKAGE CXTranslationUnit clang_createTranslationUnitFromSourceFile(
                                          CXIndex CIdx,
                                          const char *source_filename,
                                          int num_clang_command_line_args,
-                                   const char * const *clang_command_line_args,
+                                         const char * const *clang_command_line_args,
                                          unsigned num_unsaved_files,
-                                         struct CXUnsavedFile *unsaved_files);
+                                         struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void* userdata),
+                                         void* userdata);
 
 /**
  * \brief Create a translation unit from an AST file (-emit-ast).
@@ -1245,7 +1246,8 @@ CINDEX_LINKAGE CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx,
                                                     const char *source_filename,
                                          const char * const *command_line_args,
                                                       int num_command_line_args,
-                                            struct CXUnsavedFile *unsaved_files,
+                                            struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
+                                              void* userdata,
                                                      unsigned num_unsaved_files,
                                                             unsigned options);
   
@@ -1407,7 +1409,8 @@ CINDEX_LINKAGE unsigned clang_defaultReparseOptions(CXTranslationUnit TU);
  */
 CINDEX_LINKAGE int clang_reparseTranslationUnit(CXTranslationUnit TU,
                                                 unsigned num_unsaved_files,
-                                          struct CXUnsavedFile *unsaved_files,
+                                                struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
+                                                void* userdata,
                                                 unsigned options);
 
 /**
