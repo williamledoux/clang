@@ -49,7 +49,7 @@
 #include "llvm/Support/Threading.h"
 #include "llvm/Support/Timer.h"
 #include "llvm/Support/raw_ostream.h"
-
+#include "llvm/Support/TargetSelect.h"
 #if HAVE_PTHREAD_H
 #include <pthread.h>
 #endif
@@ -2544,6 +2544,14 @@ static void fatal_error_handler(void *user_data, const std::string& reason,
 }
 
 extern "C" {
+
+void clang_initializeTargets(){
+  llvm::InitializeAllTargets();
+  llvm::InitializeAllTargetMCs();
+  llvm::InitializeAllAsmPrinters();
+  llvm::InitializeAllAsmParsers();
+}
+
 CXIndex clang_createIndex(int excludeDeclarationsFromPCH,
                           int displayDiagnostics) {
   // We use crash recovery to make some of our APIs more reliable, implicitly
