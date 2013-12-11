@@ -2633,11 +2633,12 @@ clang_createTranslationUnitFromSourceFile(CXIndex CIdx,
                                           int num_command_line_args,
                                           const char * const *command_line_args,
                                           unsigned num_unsaved_files,
-                                          struct CXUnsavedFile *unsaved_files) {
+                                          struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*),
+                                          void* userdata ) {
   unsigned Options = CXTranslationUnit_DetailedPreprocessingRecord;
   return clang_parseTranslationUnit(CIdx, source_filename,
                                     command_line_args, num_command_line_args,
-                                    unsaved_files, num_unsaved_files,
+                                    unsaved_files, userdata, num_unsaved_files,
                                     Options);
 }
 
@@ -2646,11 +2647,13 @@ struct ParseTranslationUnitInfo {
   const char *source_filename;
   const char *const *command_line_args;
   int num_command_line_args;
-  struct CXUnsavedFile *unsaved_files;
+	struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*);
+  void* userdata;
   unsigned num_unsaved_files;
   unsigned options;
   CXTranslationUnit result;
 };
+
 static void clang_parseTranslationUnit_Impl(void *UserData) {
   ParseTranslationUnitInfo *PTUI =
     static_cast<ParseTranslationUnitInfo*>(UserData);
@@ -2658,7 +2661,8 @@ static void clang_parseTranslationUnit_Impl(void *UserData) {
   const char *source_filename = PTUI->source_filename;
   const char * const *command_line_args = PTUI->command_line_args;
   int num_command_line_args = PTUI->num_command_line_args;
-  struct CXUnsavedFile *unsaved_files = PTUI->unsaved_files;
+	struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*) = PTUI->unsaved_files;
+  void* userdata = PTUI->userdata;
   unsigned num_unsaved_files = PTUI->num_unsaved_files;
   unsigned options = PTUI->options;
   PTUI->result = 0;
@@ -2699,10 +2703,10 @@ static void clang_parseTranslationUnit_Impl(void *UserData) {
     std::vector<ASTUnit::RemappedFile> > RemappedCleanup(RemappedFiles.get());
 
   for (unsigned I = 0; I != num_unsaved_files; ++I) {
-    StringRef Data(unsaved_files[I].Contents, unsaved_files[I].Length);
+    StringRef Data(unsaved_files(I, userdata).Contents, unsaved_files(I, userdata).Length);
     const llvm::MemoryBuffer *Buffer
-      = llvm::MemoryBuffer::getMemBufferCopy(Data, unsaved_files[I].Filename);
-    RemappedFiles->push_back(std::make_pair(unsaved_files[I].Filename,
+      = llvm::MemoryBuffer::getMemBufferCopy(Data, unsaved_files(I, userdata).Filename);
+    RemappedFiles->push_back(std::make_pair(unsaved_files(I, userdata).Filename,
                                             Buffer));
   }
 
@@ -2781,7 +2785,8 @@ CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx,
                                              const char *source_filename,
                                          const char * const *command_line_args,
                                              int num_command_line_args,
-                                            struct CXUnsavedFile *unsaved_files,
+                                            struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*),
+                                              void* userdata,
                                              unsigned num_unsaved_files,
                                              unsigned options) {
   LOG_FUNC_SECTION {
@@ -2791,7 +2796,7 @@ CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx,
   }
 
   ParseTranslationUnitInfo PTUI = { CIdx, source_filename, command_line_args,
-                                    num_command_line_args, unsaved_files,
+                                    num_command_line_args, unsaved_files, userdata,
                                     num_unsaved_files, options, 0 };
   llvm::CrashRecoveryContext CRC;
 
@@ -2809,8 +2814,8 @@ CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx,
     for (unsigned i = 0; i != num_unsaved_files; ++i) {
       if (i)
         fprintf(stderr, ", ");
-      fprintf(stderr, "('%s', '...', %ld)", unsaved_files[i].Filename,
-              unsaved_files[i].Length);
+      fprintf(stderr, "('%s', '...', %ld)", unsaved_files(i, userdata).Filename,
+              unsaved_files(i, userdata).Length);
     }
     fprintf(stderr, "],\n");
     fprintf(stderr, "  'options' : %d,\n", options);
@@ -2920,7 +2925,8 @@ unsigned clang_defaultReparseOptions(CXTranslationUnit TU) {
 struct ReparseTranslationUnitInfo {
   CXTranslationUnit TU;
   unsigned num_unsaved_files;
-  struct CXUnsavedFile *unsaved_files;
+  struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*);
+  void* userdata;
   unsigned options;
   int result;
 };
@@ -2937,7 +2943,8 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
   TU->Diagnostics = 0;
 
   unsigned num_unsaved_files = RTUI->num_unsaved_files;
-  struct CXUnsavedFile *unsaved_files = RTUI->unsaved_files;
+  struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*) = RTUI->unsaved_files;
+  void* userdata = RTUI->userdata;
   unsigned options = RTUI->options;
   (void) options;
   RTUI->result = 1;
@@ -2957,10 +2964,10 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
     std::vector<ASTUnit::RemappedFile> > RemappedCleanup(RemappedFiles.get());
   
   for (unsigned I = 0; I != num_unsaved_files; ++I) {
-    StringRef Data(unsaved_files[I].Contents, unsaved_files[I].Length);
+    StringRef Data(unsaved_files(I,userdata).Contents, unsaved_files(I,userdata).Length);
     const llvm::MemoryBuffer *Buffer
-      = llvm::MemoryBuffer::getMemBufferCopy(Data, unsaved_files[I].Filename);
-    RemappedFiles->push_back(std::make_pair(unsaved_files[I].Filename,
+      = llvm::MemoryBuffer::getMemBufferCopy(Data, unsaved_files(I,userdata).Filename);
+    RemappedFiles->push_back(std::make_pair(unsaved_files(I,userdata).Filename,
                                             Buffer));
   }
   
@@ -2971,13 +2978,14 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
 
 int clang_reparseTranslationUnit(CXTranslationUnit TU,
                                  unsigned num_unsaved_files,
-                                 struct CXUnsavedFile *unsaved_files,
+                                 struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*),
+                                 void* userdata,
                                  unsigned options) {
   LOG_FUNC_SECTION {
     *Log << TU;
   }
 
-  ReparseTranslationUnitInfo RTUI = { TU, num_unsaved_files, unsaved_files,
+  ReparseTranslationUnitInfo RTUI = { TU, num_unsaved_files, unsaved_files, userdata,
                                       options, 0 };
 
   if (getenv("LIBCLANG_NOTHREADS")) {
