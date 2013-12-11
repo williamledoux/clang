@@ -163,7 +163,12 @@ typedef struct CXVersion {
    */
   int Subminor;
 } CXVersion;
-  
+
+/**
+ * \brief Initialize the targets that are required in order to parse platform specific assembly
+ */
+CINDEX_LINKAGE void clang_initializeTargets();
+
 /**
  * \brief Provides a shared context for creating translation units.
  *
