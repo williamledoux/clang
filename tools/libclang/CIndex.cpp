@@ -2633,7 +2633,7 @@ clang_createTranslationUnitFromSourceFile(CXIndex CIdx,
                                           int num_command_line_args,
                                           const char * const *command_line_args,
                                           unsigned num_unsaved_files,
-                                          struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*),
+                                          struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
                                           void* userdata ) {
   unsigned Options = CXTranslationUnit_DetailedPreprocessingRecord;
   return clang_parseTranslationUnit(CIdx, source_filename,
@@ -2647,7 +2647,7 @@ struct ParseTranslationUnitInfo {
   const char *source_filename;
   const char *const *command_line_args;
   int num_command_line_args;
-	struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*);
+  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*);
   void* userdata;
   unsigned num_unsaved_files;
   unsigned options;
@@ -2661,7 +2661,7 @@ static void clang_parseTranslationUnit_Impl(void *UserData) {
   const char *source_filename = PTUI->source_filename;
   const char * const *command_line_args = PTUI->command_line_args;
   int num_command_line_args = PTUI->num_command_line_args;
-	struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*) = PTUI->unsaved_files;
+  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*) = PTUI->unsaved_files;
   void* userdata = PTUI->userdata;
   unsigned num_unsaved_files = PTUI->num_unsaved_files;
   unsigned options = PTUI->options;
@@ -2785,7 +2785,7 @@ CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx,
                                              const char *source_filename,
                                          const char * const *command_line_args,
                                              int num_command_line_args,
-                                            struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*),
+                                            struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
                                               void* userdata,
                                              unsigned num_unsaved_files,
                                              unsigned options) {
@@ -2925,7 +2925,7 @@ unsigned clang_defaultReparseOptions(CXTranslationUnit TU) {
 struct ReparseTranslationUnitInfo {
   CXTranslationUnit TU;
   unsigned num_unsaved_files;
-  struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*);
+  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*);
   void* userdata;
   unsigned options;
   int result;
@@ -2943,7 +2943,7 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
   TU->Diagnostics = 0;
 
   unsigned num_unsaved_files = RTUI->num_unsaved_files;
-  struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*) = RTUI->unsaved_files;
+  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*) = RTUI->unsaved_files;
   void* userdata = RTUI->userdata;
   unsigned options = RTUI->options;
   (void) options;
@@ -2978,7 +2978,7 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
 
 int clang_reparseTranslationUnit(CXTranslationUnit TU,
                                  unsigned num_unsaved_files,
-                                 struct CXUnsavedFile const& (__cdecl* unsaved_files)(int, void*),
+                                 struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
                                  void* userdata,
                                  unsigned options) {
   LOG_FUNC_SECTION {
@@ -3178,10 +3178,10 @@ static enum CXChildVisitResult visitWithBlock(CXCursor cursor, CXCursor parent,
 // define and call the block manually, so the 
 typedef struct _CXChildVisitResult
 {
-	void *isa;
-	int flags;
-	int reserved;
-	enum CXChildVisitResult(*invoke)(struct _CXChildVisitResult*, CXCursor,
+  void *isa;
+  int flags;
+  int reserved;
+  enum CXChildVisitResult(*invoke)(struct _CXChildVisitResult*, CXCursor,
                                          CXCursor);
 } *CXCursorVisitorBlock;
 
