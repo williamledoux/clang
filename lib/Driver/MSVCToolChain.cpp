@@ -43,6 +43,8 @@ using namespace clang::driver;
 using namespace clang::driver::toolchains;
 using namespace clang;
 using namespace llvm::opt;
+	
+#define KEY_WOW64_32KEY 0x0200
 
 MSVCToolChain::MSVCToolChain(const Driver &D, const llvm::Triple& Triple,
                              const ArgList &Args)
