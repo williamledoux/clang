@@ -2866,14 +2866,6 @@ struct RegisterFatalErrorHandler {
 static llvm::ManagedStatic<RegisterFatalErrorHandler> RegisterFatalErrorHandlerOnce;
 
 extern "C" {
-
-void clang_initializeTargets(){
-  llvm::InitializeAllTargets();
-  llvm::InitializeAllTargetMCs();
-  llvm::InitializeAllAsmPrinters();
-  llvm::InitializeAllAsmParsers();
-}
-
 CXIndex clang_createIndex(int excludeDeclarationsFromPCH,
                           int displayDiagnostics) {
   // We use crash recovery to make some of our APIs more reliable, implicitly
@@ -2982,12 +2974,11 @@ clang_createTranslationUnitFromSourceFile(CXIndex CIdx,
                                           int num_command_line_args,
                                           const char * const *command_line_args,
                                           unsigned num_unsaved_files,
-                                          struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-                                          void* userdata ) {
+                                          struct CXUnsavedFile *unsaved_files) {
   unsigned Options = CXTranslationUnit_DetailedPreprocessingRecord;
   return clang_parseTranslationUnit(CIdx, source_filename,
                                     command_line_args, num_command_line_args,
-                                    unsaved_files, userdata, num_unsaved_files,
+                                    unsaved_files, num_unsaved_files,
                                     Options);
 }
 
@@ -2996,14 +2987,11 @@ struct ParseTranslationUnitInfo {
   const char *source_filename;
   const char *const *command_line_args;
   int num_command_line_args;
-  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*);
-  void* userdata;
-  unsigned num_unsaved_files;
+  ArrayRef<CXUnsavedFile> unsaved_files;
   unsigned options;
   CXTranslationUnit *out_TU;
   CXErrorCode &result;
 };
-
 static void clang_parseTranslationUnit_Impl(void *UserData) {
   const ParseTranslationUnitInfo *PTUI =
       static_cast<ParseTranslationUnitInfo *>(UserData);
@@ -3011,9 +2999,6 @@ static void clang_parseTranslationUnit_Impl(void *UserData) {
   const char *source_filename = PTUI->source_filename;
   const char * const *command_line_args = PTUI->command_line_args;
   int num_command_line_args = PTUI->num_command_line_args;
-  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*) = PTUI->unsaved_files;
-  void* userdata = PTUI->userdata;
-  unsigned num_unsaved_files = PTUI->num_unsaved_files;
   unsigned options = PTUI->options;
   CXTranslationUnit *out_TU = PTUI->out_TU;
 
@@ -3059,8 +3044,7 @@ static void clang_parseTranslationUnit_Impl(void *UserData) {
   llvm::CrashRecoveryContextCleanupRegistrar<
     std::vector<ASTUnit::RemappedFile> > RemappedCleanup(RemappedFiles.get());
 
-  for (unsigned I = 0; I != num_unsaved_files; ++I) {
-  	/*KELTYPE?*/UF = unsaved_files(I, userdata);
+  for (auto &UF : PTUI->unsaved_files) {
     std::unique_ptr<llvm::MemoryBuffer> MB =
         llvm::MemoryBuffer::getMemBufferCopy(getContents(UF), UF.Filename);
     RemappedFiles->push_back(std::make_pair(UF.Filename, MB.release()));
@@ -3143,14 +3127,13 @@ clang_parseTranslationUnit(CXIndex CIdx,
                            const char *source_filename,
                            const char *const *command_line_args,
                            int num_command_line_args,
-                           struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-                           void* userdata,
+                           struct CXUnsavedFile *unsaved_files,
                            unsigned num_unsaved_files,
                            unsigned options) {
   CXTranslationUnit TU;
   enum CXErrorCode Result = clang_parseTranslationUnit2(
       CIdx, source_filename, command_line_args, num_command_line_args,
-      unsaved_files, userdata, num_unsaved_files, options, &TU);
+      unsaved_files, num_unsaved_files, options, &TU);
   (void)Result;
   assert((TU && Result == CXError_Success) ||
          (!TU && Result != CXError_Success));
@@ -3162,8 +3145,7 @@ enum CXErrorCode clang_parseTranslationUnit2(
     const char *source_filename,
     const char *const *command_line_args,
     int num_command_line_args,
-    struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-    void* userdata,
+    struct CXUnsavedFile *unsaved_files,
     unsigned num_unsaved_files,
     unsigned options,
     CXTranslationUnit *out_TU) {
@@ -3182,8 +3164,7 @@ enum CXErrorCode clang_parseTranslationUnit2(
       source_filename,
       command_line_args,
       num_command_line_args,
-      unsaved_files,
-      userdata,
+      llvm::makeArrayRef(unsaved_files, num_unsaved_files),
       options,
       out_TU,
       result};
@@ -3203,8 +3184,8 @@ enum CXErrorCode clang_parseTranslationUnit2(
     for (unsigned i = 0; i != num_unsaved_files; ++i) {
       if (i)
         fprintf(stderr, ", ");
-      fprintf(stderr, "('%s', '...', %ld)", unsaved_files(i, userdata).Filename,
-              unsaved_files(i, userdata).Length);
+      fprintf(stderr, "('%s', '...', %ld)", unsaved_files[i].Filename,
+              unsaved_files[i].Length);
     }
     fprintf(stderr, "],\n");
     fprintf(stderr, "  'options' : %d,\n", options);
@@ -3317,9 +3298,7 @@ unsigned clang_defaultReparseOptions(CXTranslationUnit TU) {
 
 struct ReparseTranslationUnitInfo {
   CXTranslationUnit TU;
-  unsigned num_unsaved_files;
-  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*);
-  void* userdata;
+  ArrayRef<CXUnsavedFile> unsaved_files;
   unsigned options;
   CXErrorCode &result;
 };
@@ -3342,13 +3321,6 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
   delete static_cast<CXDiagnosticSetImpl*>(TU->Diagnostics);
   TU->Diagnostics = nullptr;
 
-  unsigned num_unsaved_files = RTUI->num_unsaved_files;
-  struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*) = RTUI->unsaved_files;
-  void* userdata = RTUI->userdata;
-  unsigned options = RTUI->options;
-  (void) options;
-  RTUI->result = 1;
-
   CIndexer *CXXIdx = TU->CIdx;
   if (CXXIdx->isOptEnabled(CXGlobalOpt_ThreadBackgroundPriorityForEditing))
     setThreadBackgroundPriority();
@@ -3363,8 +3335,7 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
   llvm::CrashRecoveryContextCleanupRegistrar<
     std::vector<ASTUnit::RemappedFile> > RemappedCleanup(RemappedFiles.get());
 
-  for (unsigned I = 0; I != num_unsaved_files; ++I) {
-  	UF = unsaved_files(I,userdata);
+  for (auto &UF : RTUI->unsaved_files) {
     std::unique_ptr<llvm::MemoryBuffer> MB =
         llvm::MemoryBuffer::getMemBufferCopy(getContents(UF), UF.Filename);
     RemappedFiles->push_back(std::make_pair(UF.Filename, MB.release()));
@@ -3379,8 +3350,7 @@ static void clang_reparseTranslationUnit_Impl(void *UserData) {
 
 int clang_reparseTranslationUnit(CXTranslationUnit TU,
                                  unsigned num_unsaved_files,
-                                 struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-                                 void* userdata,
+                                 struct CXUnsavedFile *unsaved_files,
                                  unsigned options) {
   LOG_FUNC_SECTION {
     *Log << TU;
@@ -3390,9 +3360,9 @@ int clang_reparseTranslationUnit(CXTranslationUnit TU,
     return CXError_InvalidArguments;
 
   CXErrorCode result = CXError_Failure;
-
-  ReparseTranslationUnitInfo RTUI = { TU, num_unsaved_files, unsaved_files, userdata,
-                                      options, 0 };
+  ReparseTranslationUnitInfo RTUI = {
+      TU, llvm::makeArrayRef(unsaved_files, num_unsaved_files), options,
+      result};
 
   if (getenv("LIBCLANG_NOTHREADS")) {
     clang_reparseTranslationUnit_Impl(&RTUI);

@@ -165,12 +165,7 @@ typedef struct CXVersion {
    */
   int Subminor;
 } CXVersion;
-
-/**
- * \brief Initialize the targets that are required in order to parse platform specific assembly
- */
-CINDEX_LINKAGE void clang_initializeTargets();
-
+  
 /**
  * \brief Provides a shared context for creating translation units.
  *
@@ -1084,10 +1079,9 @@ CINDEX_LINKAGE CXTranslationUnit clang_createTranslationUnitFromSourceFile(
                                          CXIndex CIdx,
                                          const char *source_filename,
                                          int num_clang_command_line_args,
-                                         const char * const *clang_command_line_args,
+                                   const char * const *clang_command_line_args,
                                          unsigned num_unsaved_files,
-                                         struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void* userdata),
-                                         void* userdata);
+                                         struct CXUnsavedFile *unsaved_files);
 
 /**
  * \brief Same as \c clang_createTranslationUnit2, but returns
@@ -1236,8 +1230,7 @@ clang_parseTranslationUnit(CXIndex CIdx,
                            const char *source_filename,
                            const char *const *command_line_args,
                            int num_command_line_args,
-                           struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-                           void* userdata,
+                           struct CXUnsavedFile *unsaved_files,
                            unsigned num_unsaved_files,
                            unsigned options);
 
@@ -1290,8 +1283,7 @@ clang_parseTranslationUnit2(CXIndex CIdx,
                             const char *source_filename,
                             const char *const *command_line_args,
                             int num_command_line_args,
-                            struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-                            void* userdata,
+                            struct CXUnsavedFile *unsaved_files,
                             unsigned num_unsaved_files,
                             unsigned options,
                             CXTranslationUnit *out_TU);
@@ -1455,8 +1447,7 @@ CINDEX_LINKAGE unsigned clang_defaultReparseOptions(CXTranslationUnit TU);
  */
 CINDEX_LINKAGE int clang_reparseTranslationUnit(CXTranslationUnit TU,
                                                 unsigned num_unsaved_files,
-                                                struct CXUnsavedFile const& (DEF_CALL* unsaved_files)(int, void*),
-                                                void* userdata,
+                                          struct CXUnsavedFile *unsaved_files,
                                                 unsigned options);
 
 /**
