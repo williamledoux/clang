@@ -5,13 +5,12 @@
 
 @interface NSObject @end
 @protocol myProtocol
-@property int myProtocolProperty __attribute__((availability(macosx,introduced=10.7,deprecated=10.8))); // expected-note {{method 'myProtocolProperty' declared here}} \
+@property int myProtocolProperty __attribute__((availability(macosx,introduced=10.7,deprecated=10.8))); // expected-note {{'myProtocolProperty' has been explicitly marked deprecated here}} \
                                                                                                         // expected-note {{property 'myProtocolProperty' is declared deprecated here}}
 @end
 
 @interface Foo : NSObject
-@property int myProperty __attribute__((availability(macosx,introduced=10.7,deprecated=10.8)));  // expected-note {{'myProperty' declared here}} \
-								// expected-note {{method 'myProperty' declared here}} \
+@property int myProperty __attribute__((availability(macosx,introduced=10.7,deprecated=10.8)));  // expected-note 2 {{'myProperty' has been explicitly marked deprecated here}} \
 								// expected-note {{property 'myProperty' is declared deprecated here}}
 @end
 
@@ -22,13 +21,13 @@
 
 void test(Foo *y, Bar *x, id<myProtocol> z) {
   y.myProperty = 0; // expected-warning {{'myProperty' is deprecated: first deprecated in OS X 10.8}}
-  [y myProperty];   // expected-warning {{'myProperty' is deprecated: first deprecated in OS X 10.8}} 
+  (void)[y myProperty];   // expected-warning {{'myProperty' is deprecated: first deprecated in OS X 10.8}} 
 
   x.myProperty = 1; // no-warning
-  [x myProperty]; // no-warning
+  (void)[x myProperty]; // no-warning
 
   x.myProtocolProperty = 0; // no-warning
 
-  [x myProtocolProperty]; // no-warning
-  [z myProtocolProperty]; // expected-warning {{'myProtocolProperty' is deprecated: first deprecated in OS X 10.8}}
+  (void)[x myProtocolProperty]; // no-warning
+  (void)[z myProtocolProperty]; // expected-warning {{'myProtocolProperty' is deprecated: first deprecated in OS X 10.8}}
 }

@@ -90,7 +90,7 @@ typedef char BOOL;
 
 @property (nonatomic, getter=getStringValue, strong) NSString *stringValue;
 @property (nonatomic, getter=getCounterValue, readonly) BOOL counterValue;
-@property (nonatomic, getter=getns_dixtionary, readonly, strong) NSDictionary *ns_dixtionary;
+@property (nonatomic, getter=getns_dixtionary, readonly, copy) NSDictionary *ns_dixtionary;
 
 - (BOOL)is3bar; // watch out
 - (NSString *)get3foo; // watch out
@@ -210,4 +210,11 @@ DEPRECATED
 @property (nonatomic, readonly) float Fdelegate;
 @property (nonatomic, readonly) int Idelegate;
 @property (nonatomic, readonly) BOOL Bdelegate;
+@end
+
+// rdar://19372798
+@protocol NSObject @end
+@protocol MyProtocol <NSObject>
+@property (nonatomic, readonly, strong) id readonlyProperty;
+@property (nonatomic, strong) id readWriteProperty;
 @end

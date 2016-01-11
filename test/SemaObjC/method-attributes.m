@@ -8,6 +8,7 @@
 -(void) m0 __attribute__((noreturn));
 -(void) m1 __attribute__((unused));
 -(void) m2 __attribute__((stdcall));
+-(void) m3 __attribute__((optnone));
 @end
 
 
@@ -88,4 +89,13 @@
 
 __attribute__((cdecl))  // expected-warning {{'cdecl' attribute only applies to functions and methods}}
 @interface Complain 
+@end
+
+// rdar://15450637
+@interface rdar15450637 : NSObject
+@property int p __attribute__((section("__TEXT,foo")));
+
+- (id) IMethod :(int) count, ...  __attribute__((section("__TEXT,foo")));
+
++ (void) CMethod : (id) Obj __attribute__((section("__TEXT,fee")));
 @end
