@@ -2976,10 +2976,7 @@ clang_createTranslationUnitFromSourceFile(CXIndex CIdx,
                                           unsigned num_unsaved_files,
                                           struct CXUnsavedFile *unsaved_files) {
   unsigned Options = CXTranslationUnit_DetailedPreprocessingRecord;
-  return clang_parseTranslationUnit(CIdx, source_filename,
-                                    command_line_args, num_command_line_args,
-                                    unsaved_files, num_unsaved_files,
-                                    Options);
+  return clang_parseTranslationUnit(CIdx, source_filename, command_line_args, num_command_line_args, unsaved_files, num_unsaved_files, Options);
 }
 
 struct ParseTranslationUnitInfo {
@@ -3122,33 +3119,15 @@ static void clang_parseTranslationUnit_Impl(void *UserData) {
   }
 }
 
-CXTranslationUnit
-clang_parseTranslationUnit(CXIndex CIdx,
-                           const char *source_filename,
-                           const char *const *command_line_args,
-                           int num_command_line_args,
-                           struct CXUnsavedFile *unsaved_files,
-                           unsigned num_unsaved_files,
-                           unsigned options) {
+CXTranslationUnit clang_parseTranslationUnit(CXIndex CIdx, const char* source_filename, const char *const *command_line_args, int num_command_line_args, struct CXUnsavedFile *unsaved_files, unsigned num_unsaved_files, unsigned options) {
   CXTranslationUnit TU;
-  enum CXErrorCode Result = clang_parseTranslationUnit2(
-      CIdx, source_filename, command_line_args, num_command_line_args,
-      unsaved_files, num_unsaved_files, options, &TU);
+  enum CXErrorCode Result = clang_parseTranslationUnit2( CIdx, source_filename, command_line_args, num_command_line_args, unsaved_files, num_unsaved_files, options, &TU);
   (void)Result;
-  assert((TU && Result == CXError_Success) ||
-         (!TU && Result != CXError_Success));
+  assert((TU && Result == CXError_Success) || (!TU && Result != CXError_Success));
   return TU;
 }
 
-enum CXErrorCode clang_parseTranslationUnit2(
-    CXIndex CIdx,
-    const char *source_filename,
-    const char *const *command_line_args,
-    int num_command_line_args,
-    struct CXUnsavedFile *unsaved_files,
-    unsigned num_unsaved_files,
-    unsigned options,
-    CXTranslationUnit *out_TU) {
+enum CXErrorCode clang_parseTranslationUnit2(CXIndex CIdx, const char* source_filename, const char *const *command_line_args, int num_command_line_args, struct CXUnsavedFile *unsaved_files, unsigned num_unsaved_files, unsigned options, CXTranslationUnit *out_TU) {
   LOG_FUNC_SECTION {
     *Log << source_filename << ": ";
     for (int i = 0; i != num_command_line_args; ++i)
@@ -3159,15 +3138,7 @@ enum CXErrorCode clang_parseTranslationUnit2(
     return CXError_InvalidArguments;
 
   CXErrorCode result = CXError_Failure;
-  ParseTranslationUnitInfo PTUI = {
-      CIdx,
-      source_filename,
-      command_line_args,
-      num_command_line_args,
-      llvm::makeArrayRef(unsaved_files, num_unsaved_files),
-      options,
-      out_TU,
-      result};
+  ParseTranslationUnitInfo PTUI = { CIdx, source_filename, command_line_args, num_command_line_args, llvm::makeArrayRef(unsaved_files, num_unsaved_files), options, out_TU, result};
   llvm::CrashRecoveryContext CRC;
 
   if (!RunSafely(CRC, clang_parseTranslationUnit_Impl, &PTUI)) {
@@ -3279,11 +3250,11 @@ void clang_disposeTranslationUnit(CXTranslationUnit CTUnit) {
   if (CTUnit) {
     // If the translation unit has been marked as unsafe to free, just discard
     // it.
-    ASTUnit *Unit = cxtu::getASTUnit(CTUnit);
-    if (Unit && Unit->isUnsafeToFree())
+    ASTUnit* pUnit = cxtu::getASTUnit(CTUnit);
+    if (pUnit && pUnit->isUnsafeToFree())
       return;
 
-    delete cxtu::getASTUnit(CTUnit);
+    delete pUnit;
     delete CTUnit->StringPool;
     delete static_cast<CXDiagnosticSetImpl *>(CTUnit->Diagnostics);
     disposeOverridenCXCursorsPool(CTUnit->OverridenCursorsPool);
@@ -3553,11 +3524,8 @@ static SourceLocation getLocationFromExpr(const Expr *E) {
 
 extern "C" {
 
-unsigned clang_visitChildren(CXCursor parent,
-                             CXCursorVisitor visitor,
-                             CXClientData client_data) {
-  CursorVisitor CursorVis(getCursorTU(parent), visitor, client_data,
-                          /*VisitPreprocessorLast=*/false);
+unsigned clang_visitChildren(CXCursor parent, CXCursorVisitor visitor, CXClientData client_data) {
+  CursorVisitor CursorVis(getCursorTU(parent), visitor, client_data, /*VisitPreprocessorLast=*/false);
   return CursorVis.VisitChildren(parent);
 }
 
@@ -3568,33 +3536,28 @@ unsigned clang_visitChildren(CXCursor parent,
 typedef enum CXChildVisitResult 
      (^CXCursorVisitorBlock)(CXCursor cursor, CXCursor parent);
 
-static enum CXChildVisitResult visitWithBlock(CXCursor cursor, CXCursor parent,
-    CXClientData client_data) {
+static enum CXChildVisitResult visitWithBlock(CXCursor cursor, CXCursor parent, CXClientData client_data) {
   CXCursorVisitorBlock block = (CXCursorVisitorBlock)client_data;
   return block(cursor, parent);
 }
 #else
 // If we are compiled with a compiler that doesn't have native blocks support,
 // define and call the block manually, so the 
-typedef struct _CXChildVisitResult
-{
+typedef struct _CXChildVisitResult{
   void *isa;
   int flags;
   int reserved;
-  enum CXChildVisitResult(*invoke)(struct _CXChildVisitResult*, CXCursor,
-                                         CXCursor);
+  enum CXChildVisitResult(*invoke)(struct _CXChildVisitResult*, CXCursor, CXCursor);
 } *CXCursorVisitorBlock;
 
-static enum CXChildVisitResult visitWithBlock(CXCursor cursor, CXCursor parent,
-    CXClientData client_data) {
+static enum CXChildVisitResult visitWithBlock(CXCursor cursor, CXCursor parent, CXClientData client_data) {
   CXCursorVisitorBlock block = (CXCursorVisitorBlock)client_data;
   return block->invoke(block, cursor, parent);
 }
 #endif
 
 
-unsigned clang_visitChildrenWithBlock(CXCursor parent,
-                                      CXCursorVisitorBlock block) {
+unsigned clang_visitChildrenWithBlock(CXCursor parent, CXCursorVisitorBlock block) {
   return clang_visitChildren(parent, visitWithBlock, block);
 }
 
@@ -4683,8 +4646,7 @@ CXSourceLocation clang_getCursorLocation(CXCursor C) {
     }
 
     case CXCursor_OverloadedDeclRef:
-      return cxloc::translateSourceLocation(getCursorContext(C),
-                                          getCursorOverloadedDeclRef(C).second);
+      return cxloc::translateSourceLocation(getCursorContext(C), getCursorOverloadedDeclRef(C).second);
 
     default:
       // FIXME: Need a way to enumerate all non-reference cases.
@@ -4693,12 +4655,10 @@ CXSourceLocation clang_getCursorLocation(CXCursor C) {
   }
 
   if (clang_isExpression(C.kind))
-    return cxloc::translateSourceLocation(getCursorContext(C),
-                                   getLocationFromExpr(getCursorExpr(C)));
+    return cxloc::translateSourceLocation(getCursorContext(C), getLocationFromExpr(getCursorExpr(C)));
 
   if (clang_isStatement(C.kind))
-    return cxloc::translateSourceLocation(getCursorContext(C),
-                                          getCursorStmt(C)->getLocStart());
+    return cxloc::translateSourceLocation(getCursorContext(C), getCursorStmt(C)->getLocStart());
 
   if (C.kind == CXCursor_PreprocessingDirective) {
     SourceLocation L = cxcursor::getCursorPreprocessingDirective(C).getBegin();
@@ -4706,8 +4666,7 @@ CXSourceLocation clang_getCursorLocation(CXCursor C) {
   }
 
   if (C.kind == CXCursor_MacroExpansion) {
-    SourceLocation L
-      = cxcursor::getCursorMacroExpansion(C).getSourceRange().getBegin();
+    SourceLocation L = cxcursor::getCursorMacroExpansion(C).getSourceRange().getBegin();
     return cxloc::translateSourceLocation(getCursorContext(C), L);
   }
 

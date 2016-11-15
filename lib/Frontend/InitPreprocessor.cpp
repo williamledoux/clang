@@ -410,8 +410,7 @@ static void InitializeStandardPredefinedMacros(const TargetInfo &TI,
 
 /// Initialize the predefined C++ language feature test macros defined in
 /// ISO/IEC JTC1/SC22/WG21 (C++) SD-6: "SG10 Feature Test Recommendations".
-static void InitializeCPlusPlusFeatureTestMacros(const LangOptions &LangOpts,
-                                                 MacroBuilder &Builder) {
+static void InitializeCPlusPlusFeatureTestMacros(const LangOptions &LangOpts, MacroBuilder &Builder) {
   // C++98 features.
   if (LangOpts.RTTI)
     Builder.defineMacro("__cpp_rtti", "199711");
@@ -458,10 +457,7 @@ static void InitializeCPlusPlusFeatureTestMacros(const LangOptions &LangOpts,
     Builder.defineMacro("__cpp_experimental_concepts", "1");
 }
 
-static void InitializePredefinedMacros(const TargetInfo &TI,
-                                       const LangOptions &LangOpts,
-                                       const FrontendOptions &FEOpts,
-                                       MacroBuilder &Builder) {
+static void InitializePredefinedMacros(const TargetInfo &TI, const LangOptions &LangOpts, const FrontendOptions &FEOpts, MacroBuilder &Builder) {
   // Compiler version introspection macros.
   Builder.defineMacro("__llvm__");  // LLVM Backend
   Builder.defineMacro("__clang__"); // Clang Frontend
@@ -474,9 +470,7 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
 #else
   Builder.defineMacro("__clang_patchlevel__", "0");
 #endif
-  Builder.defineMacro("__clang_version__", 
-                      "\"" CLANG_VERSION_STRING " "
-                      + getClangFullRepositoryVersion() + "\"");
+  Builder.defineMacro("__clang_version__", "\"" CLANG_VERSION_STRING " " + getClangFullRepositoryVersion() + "\"");
 #undef TOSTR
 #undef TOSTR2
   if (!LangOpts.MSVCCompat) {
@@ -502,8 +496,7 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   // As sad as it is, enough software depends on the __VERSION__ for version
   // checks that it is necessary to report 4.2.1 (the base GCC version we claim
   // compatibility with) first.
-  Builder.defineMacro("__VERSION__", "\"4.2.1 Compatible " + 
-                      Twine(getClangFullCPPVersion()) + "\"");
+  Builder.defineMacro("__VERSION__", "\"4.2.1 Compatible " +  Twine(getClangFullCPPVersion()) + "\"");
 
   // Initialize language-specific preprocessor defines.
 
@@ -539,14 +532,11 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
       if (tuple.getSubminor().hasValue())
         subminor = tuple.getSubminor().getValue();
 
-      Builder.defineMacro("__OBJFW_RUNTIME_ABI__",
-                          Twine(tuple.getMajor() * 10000 + minor * 100 +
-                                subminor));
+      Builder.defineMacro("__OBJFW_RUNTIME_ABI__", Twine(tuple.getMajor() * 10000 + minor * 100 + subminor));
     }
 
     Builder.defineMacro("IBOutlet", "__attribute__((iboutlet))");
-    Builder.defineMacro("IBOutletCollection(ClassName)",
-                        "__attribute__((iboutletcollection(ClassName)))");
+    Builder.defineMacro("IBOutletCollection(ClassName)", "__attribute__((iboutletcollection(ClassName)))");
     Builder.defineMacro("IBAction", "void)__attribute__((ibaction)");
     Builder.defineMacro("IBInspectable", "");
     Builder.defineMacro("IB_DESIGNABLE", "");
@@ -659,25 +649,20 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   DefineTypeSizeof("__SIZEOF_LONG_LONG__", TI.getLongLongWidth(), TI, Builder);
   DefineTypeSizeof("__SIZEOF_POINTER__", TI.getPointerWidth(0), TI, Builder);
   DefineTypeSizeof("__SIZEOF_SHORT__", TI.getShortWidth(), TI, Builder);
-  DefineTypeSizeof("__SIZEOF_PTRDIFF_T__",
-                   TI.getTypeWidth(TI.getPtrDiffType(0)), TI, Builder);
-  DefineTypeSizeof("__SIZEOF_SIZE_T__",
-                   TI.getTypeWidth(TI.getSizeType()), TI, Builder);
-  DefineTypeSizeof("__SIZEOF_WCHAR_T__",
-                   TI.getTypeWidth(TI.getWCharType()), TI, Builder);
-  DefineTypeSizeof("__SIZEOF_WINT_T__",
-                   TI.getTypeWidth(TI.getWIntType()), TI, Builder);
+  DefineTypeSizeof("__SIZEOF_PTRDIFF_T__", TI.getTypeWidth(TI.getPtrDiffType(0)), TI, Builder);
+  DefineTypeSizeof("__SIZEOF_SIZE_T__", TI.getTypeWidth(TI.getSizeType()), TI, Builder);
+  DefineTypeSizeof("__SIZEOF_WCHAR_T__", TI.getTypeWidth(TI.getWCharType()), TI, Builder);
+  DefineTypeSizeof("__SIZEOF_WINT_T__", TI.getTypeWidth(TI.getWIntType()), TI, Builder);
+
   if (TI.hasInt128Type())
     DefineTypeSizeof("__SIZEOF_INT128__", 128, TI, Builder);
 
   DefineType("__INTMAX_TYPE__", TI.getIntMaxType(), Builder);
   DefineFmt("__INTMAX", TI.getIntMaxType(), TI, Builder);
-  Builder.defineMacro("__INTMAX_C_SUFFIX__",
-                      TI.getTypeConstantSuffix(TI.getIntMaxType()));
+  Builder.defineMacro("__INTMAX_C_SUFFIX__", TI.getTypeConstantSuffix(TI.getIntMaxType()));
   DefineType("__UINTMAX_TYPE__", TI.getUIntMaxType(), Builder);
   DefineFmt("__UINTMAX", TI.getUIntMaxType(), TI, Builder);
-  Builder.defineMacro("__UINTMAX_C_SUFFIX__",
-                      TI.getTypeConstantSuffix(TI.getUIntMaxType()));
+  Builder.defineMacro("__UINTMAX_C_SUFFIX__", TI.getTypeConstantSuffix(TI.getUIntMaxType()));
   DefineTypeWidth("__INTMAX_WIDTH__",  TI.getIntMaxType(), TI, Builder);
   DefineType("__PTRDIFF_TYPE__", TI.getPtrDiffType(0), Builder);
   DefineFmt("__PTRDIFF", TI.getPtrDiffType(0), TI, Builder);
@@ -707,12 +692,10 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   DefineFloatMacros(Builder, "LDBL", &TI.getLongDoubleFormat(), "L");
 
   // Define a __POINTER_WIDTH__ macro for stdint.h.
-  Builder.defineMacro("__POINTER_WIDTH__",
-                      Twine((int)TI.getPointerWidth(0)));
+  Builder.defineMacro("__POINTER_WIDTH__", Twine((int)TI.getPointerWidth(0)));
 
   // Define __BIGGEST_ALIGNMENT__ to be compatible with gcc.
-  Builder.defineMacro("__BIGGEST_ALIGNMENT__",
-                      Twine(TI.getSuitableAlign() / TI.getCharWidth()) );
+  Builder.defineMacro("__BIGGEST_ALIGNMENT__", Twine(TI.getSuitableAlign() / TI.getCharWidth()) );
 
   if (!LangOpts.CharIsSigned)
     Builder.defineMacro("__CHAR_UNSIGNED__");
@@ -804,11 +787,7 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
 
     // Used by libstdc++ to implement ATOMIC_<foo>_LOCK_FREE.
     unsigned InlineWidthBits = TI.getMaxAtomicInlineWidth();
-#define DEFINE_LOCK_FREE_MACRO(TYPE, Type) \
-    Builder.defineMacro("__GCC_ATOMIC_" #TYPE "_LOCK_FREE", \
-                        getLockFreeValue(TI.get##Type##Width(), \
-                                         TI.get##Type##Align(), \
-                                         InlineWidthBits));
+#define DEFINE_LOCK_FREE_MACRO(TYPE, Type) Builder.defineMacro("__GCC_ATOMIC_" #TYPE "_LOCK_FREE", getLockFreeValue(TI.get##Type##Width(), TI.get##Type##Align(), InlineWidthBits));
     DEFINE_LOCK_FREE_MACRO(BOOL, Bool);
     DEFINE_LOCK_FREE_MACRO(CHAR, Char);
     DEFINE_LOCK_FREE_MACRO(CHAR16_T, Char16);
@@ -818,10 +797,7 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
     DEFINE_LOCK_FREE_MACRO(INT, Int);
     DEFINE_LOCK_FREE_MACRO(LONG, Long);
     DEFINE_LOCK_FREE_MACRO(LLONG, LongLong);
-    Builder.defineMacro("__GCC_ATOMIC_POINTER_LOCK_FREE",
-                        getLockFreeValue(TI.getPointerWidth(0),
-                                         TI.getPointerAlign(0),
-                                         InlineWidthBits));
+    Builder.defineMacro("__GCC_ATOMIC_POINTER_LOCK_FREE", getLockFreeValue(TI.getPointerWidth(0), TI.getPointerAlign(0), InlineWidthBits));
 #undef DEFINE_LOCK_FREE_MACRO
   }
 
@@ -862,10 +838,8 @@ static void InitializePredefinedMacros(const TargetInfo &TI,
   if (LangOpts.ObjCAutoRefCount) {
     Builder.defineMacro("__weak", "__attribute__((objc_ownership(weak)))");
     Builder.defineMacro("__strong", "__attribute__((objc_ownership(strong)))");
-    Builder.defineMacro("__autoreleasing",
-                        "__attribute__((objc_ownership(autoreleasing)))");
-    Builder.defineMacro("__unsafe_unretained",
-                        "__attribute__((objc_ownership(none)))");
+    Builder.defineMacro("__autoreleasing", "__attribute__((objc_ownership(autoreleasing)))");
+    Builder.defineMacro("__unsafe_unretained", "__attribute__((objc_ownership(none)))");
   }
 
   // On Darwin, there are __double_underscored variants of the type

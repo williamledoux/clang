@@ -66,10 +66,7 @@ clang_VirtualFileOverlay_setCaseSensitivity(CXVirtualFileOverlay VFO,
   return CXError_Success;
 }
 
-enum CXErrorCode
-clang_VirtualFileOverlay_writeToBuffer(CXVirtualFileOverlay VFO, unsigned,
-                                       char **out_buffer_ptr,
-                                       unsigned *out_buffer_size) {
+enum CXErrorCode clang_VirtualFileOverlay_writeToBuffer(CXVirtualFileOverlay VFO, unsigned, char **out_buffer_ptr, unsigned *out_buffer_size) {
   if (!VFO || !out_buffer_ptr || !out_buffer_size)
     return CXError_InvalidArguments;
 
@@ -122,10 +119,7 @@ clang_ModuleMapDescriptor_setUmbrellaHeader(CXModuleMapDescriptor MMD,
   return CXError_Success;
 }
 
-enum CXErrorCode
-clang_ModuleMapDescriptor_writeToBuffer(CXModuleMapDescriptor MMD, unsigned,
-                                       char **out_buffer_ptr,
-                                       unsigned *out_buffer_size) {
+enum CXErrorCode clang_ModuleMapDescriptor_writeToBuffer(CXModuleMapDescriptor MMD, unsigned, char **out_buffer_ptr, unsigned *out_buffer_size) {
   if (!MMD || !out_buffer_ptr || !out_buffer_size)
     return CXError_InvalidArguments;
 
